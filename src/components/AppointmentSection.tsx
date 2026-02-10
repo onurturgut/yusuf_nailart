@@ -1,9 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover,
   PopoverContent,
@@ -29,9 +31,11 @@ const AppointmentSection = () => {
   const { toast } = useToast();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
   const [service, setService] = useState("");
+  const [addons, setAddons] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const timeSlots = [
@@ -46,11 +50,25 @@ const AppointmentSection = () => {
     { value: "manicure-pedicure", label: language === "tr" ? "Manikür & Pedikür" : "Manicure & Pedicure" },
     { value: "nail-art", label: language === "tr" ? "Tırnak Sanatı" : "Nail Art" },
   ];
+  const addonOptions = [
+    { value: "french", label: language === "tr" ? "Frenc" : "French" },
+    { value: "cat-eye", label: language === "tr" ? "Kedi gözü" : "Cat eye" },
+    { value: "chrome-dust", label: language === "tr" ? "Chrome tuzu" : "Chrome dust" },
+    { value: "pearl-dust", label: language === "tr" ? "İnci tozu" : "Pearl dust" },
+    { value: "nail-art-addon", label: language === "tr" ? "Nail art" : "Nail art" },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!firstName.trim() || !lastName.trim() || !date || !time || !service) {
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !phone.trim() ||
+      !date ||
+      !time ||
+      !service
+    ) {
       toast({
         title: t("appointment.error"),
         variant: "destructive",
@@ -61,12 +79,21 @@ const AppointmentSection = () => {
     setIsSubmitting(true);
 
     try {
+      const selectedAddonLabels = addons
+        .map((value) => addonOptions.find((addon) => addon.value === value)?.label)
+        .filter(Boolean)
+        .join(", ");
+      const selectedServiceLabel = services.find((s) => s.value === service)?.label ?? service;
+      const serviceWithAddons = selectedAddonLabels
+        ? `${selectedServiceLabel} + ${selectedAddonLabels}`
+        : selectedServiceLabel;
+
       const { error } = await supabase.from("appointments").insert({
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         appointment_date: format(date, "yyyy-MM-dd"),
         appointment_time: time,
-        service_type: service,
+        service_type: serviceWithAddons,
       });
 
       if (error) throw error;
@@ -79,9 +106,11 @@ const AppointmentSection = () => {
       // Reset form
       setFirstName("");
       setLastName("");
+      setPhone("");
       setDate(undefined);
       setTime("");
       setService("");
+      setAddons([]);
     } catch (error) {
       console.error("Appointment error:", error);
       toast({
@@ -138,6 +167,19 @@ const AppointmentSection = () => {
                     maxLength={50}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">{t("appointment.phone")}</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder={t("appointment.phone")}
+                  required
+                  maxLength={30}
+                />
               </div>
 
               <div className="space-y-2">
@@ -206,6 +248,47 @@ const AppointmentSection = () => {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <Label>{t("appointment.addons")}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      {t("appointment.addons")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <ScrollArea className="h-48">
+                      <div className="p-3 space-y-2">
+                        {addonOptions.map((addon) => {
+                          const checked = addons.includes(addon.value);
+                          return (
+                            <label
+                              key={addon.value}
+                              className="flex items-center gap-3 rounded-md border border-border bg-background/60 px-3 py-2"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(value) => {
+                                  const next = value
+                                    ? [...addons, addon.value]
+                                    : addons.filter((item) => item !== addon.value);
+                                  setAddons(next);
+                                }}
+                              />
+                              <span className="text-sm text-foreground">{addon.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg rounded-full"
@@ -222,3 +305,6 @@ const AppointmentSection = () => {
 };
 
 export default AppointmentSection;
+
+
+

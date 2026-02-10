@@ -8,16 +8,27 @@ const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KE
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
-}
-
 const storage = typeof window === "undefined" ? undefined : localStorage;
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage,
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+
+export const supabase = (() => {
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    // Avoid crashing build; runtime will show a clear error.
+    // eslint-disable-next-line no-console
+    console.warn("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+    return null as unknown as ReturnType<typeof createClient<Database>>;
+  }
+
+  if (!supabaseClient) {
+    supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        storage,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    });
+  }
+
+  return supabaseClient;
+})();
