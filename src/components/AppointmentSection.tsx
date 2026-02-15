@@ -103,7 +103,8 @@ const AppointmentSection = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Appointment request failed");
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.detail || body?.error || "Appointment request failed");
       }
 
       toast({
@@ -124,6 +125,7 @@ const AppointmentSection = () => {
       console.error("Appointment error:", error);
       toast({
         title: t("appointment.error"),
+        description: error instanceof Error ? error.message : undefined,
         variant: "destructive",
       });
     } finally {

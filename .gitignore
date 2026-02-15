@@ -15,6 +15,14 @@ dist-ssr
 out
 coverage
 
+# Environment files
+.env
+.env.*
+!.env.example
+
+# TypeScript build cache
+*.tsbuildinfo
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
