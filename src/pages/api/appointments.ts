@@ -104,6 +104,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(201).json({ ok: true, email_sent: emailSent });
   } catch (error) {
     console.error("Failed to create appointment", error);
-    return res.status(500).json({ error: "Failed to create appointment" });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (message.includes("MONGODB_URI")) {
+      return res.status(500).json({ error: "Server configuration error", detail: "MONGODB_URI is missing" });
+    }
+    return res.status(500).json({ error: "Failed to create appointment", detail: message });
   }
 }

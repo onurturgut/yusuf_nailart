@@ -103,7 +103,20 @@ const AppointmentSection = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Appointment request failed");
+        const contentType = response.headers.get("content-type") || "";
+        let message = `Request failed (${response.status})`;
+
+        if (contentType.includes("application/json")) {
+          const body = await response.json().catch(() => ({}));
+          message = body?.detail || body?.error || message;
+        } else {
+          const text = await response.text().catch(() => "");
+          if (text.trim().length > 0) {
+            message = `${message}: ${text.slice(0, 180)}`;
+          }
+        }
+
+        throw new Error(message);
       }
 
       toast({
@@ -124,6 +137,7 @@ const AppointmentSection = () => {
       console.error("Appointment error:", error);
       toast({
         title: t("appointment.error"),
+        description: error instanceof Error ? error.message : undefined,
         variant: "destructive",
       });
     } finally {
