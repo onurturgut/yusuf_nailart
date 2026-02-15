@@ -1,10 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ADMIN_EMAILS = process.env.ADMIN_EMAILS;
+import { getDb, type AppointmentDoc } from "@/lib/mongodb";
+import { getAdminSessionCookie, verifyAdminSessionToken } from "@/lib/server/admin-auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -12,48 +8,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-    return res.status(500).json({ error: "Missing server Supabase env vars" });
+  const token = getAdminSessionCookie(req);
+  if (!token || !verifyAdminSessionToken(token)) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : undefined;
+  try {
+    const db = await getDb();
+    const documents = await db
+      .collection<AppointmentDoc>("appointments")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
 
-  if (!token) {
-    return res.status(401).json({ error: "Missing auth token" });
+    const data = documents.map((doc) => ({
+      id: doc._id.toString(),
+      first_name: doc.first_name,
+      last_name: doc.last_name,
+      email: doc.email || "",
+      service_type: doc.service_type,
+      appointment_date: doc.appointment_date,
+      appointment_time: doc.appointment_time,
+      addons: Array.isArray(doc.addons) ? doc.addons : [],
+      created_at: doc.created_at,
+    }));
+
+    return res.status(200).json({ data });
+  } catch (error) {
+    console.error("Failed to fetch appointments", error);
+    return res.status(500).json({ error: "Failed to fetch appointments" });
   }
-
-  const supabase = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-
-  const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData?.user?.email) {
-    return res.status(401).json({ error: "Invalid auth token" });
-  }
-
-  if (ADMIN_EMAILS) {
-    const allowed = ADMIN_EMAILS.split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean);
-    if (!allowed.includes(userData.user.email.toLowerCase())) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-  }
-
-  const { data, error } = await supabase
-    .from("appointments")
-    .select("id, first_name, last_name, service_type, appointment_date, appointment_time, created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
-
-  return res.status(200).json({ data });
 }

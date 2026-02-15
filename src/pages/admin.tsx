@@ -3,16 +3,50 @@ import Head from "next/head";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface AppointmentRow {
   id: string;
   first_name: string;
   last_name: string;
+  email: string;
   service_type: string;
   appointment_date: string;
   appointment_time: string;
+  addons?: string[];
   created_at: string;
+}
+
+function formatAppointmentDate(value: string) {
+  const trimmed = value.trim();
+  const parts = trimmed.split("-");
+
+  if (parts.length === 3 && parts[0].length === 4) {
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleDateString("tr-TR");
+}
+
+function formatServiceType(value: string) {
+  const serviceMap: Record<string, string> = {
+    prosthetic: "Protez Tırnak ve Bakımı",
+    gel: "Jel Tırnak",
+    "manicure-pedicure": "Manikür ve Pedikür",
+    "nail-art": "Kalıcı Oje",
+    "Prosthetic Nails and Care": "Protez Tırnak ve Bakımı",
+    "Gel Nails": "Jel Tırnak",
+    "Manicure and Pedicure": "Manikür ve Pedikür",
+    "Permanent Gel Polish": "Kalıcı Oje",
+  };
+
+  return serviceMap[value] || value;
 }
 
 export default function AdminPage() {
@@ -26,46 +60,30 @@ export default function AdminPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      const hasSession = Boolean(data.session?.access_token);
-      setIsAuthed(hasSession);
+      await loadAppointments(true);
       setSessionReady(true);
-      if (hasSession) {
-        void loadAppointments();
-      }
     };
     void init();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      const hasSession = Boolean(session?.access_token);
-      setIsAuthed(hasSession);
-      if (hasSession) {
-        void loadAppointments();
-      } else {
-        setRows([]);
-      }
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
   }, []);
 
-  const loadAppointments = async () => {
+  const loadAppointments = async (silentAuthError = false) => {
     setLoading(true);
-    setError(null);
+    if (!silentAuthError) {
+      setError(null);
+    }
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) {
-        throw new Error("Oturum bulunamadı");
-      }
-
       const res = await fetch("/api/admin/appointments", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
+
+      if (res.status === 401) {
+        setIsAuthed(false);
+        setRows([]);
+        if (!silentAuthError) {
+          setError("Lütfen giriş yapın");
+        }
+        return;
+      }
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -73,6 +91,7 @@ export default function AdminPage() {
       }
 
       const data = await res.json();
+      setIsAuthed(true);
       setRows(data.data || []);
     } catch (err) {
       setRows([]);
@@ -91,14 +110,25 @@ export default function AdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
       });
-      if (signInError) {
-        throw signInError;
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || "Giriş başarısız");
       }
-      await loadAppointments();
+
+      setIsAuthed(true);
+      await loadAppointments(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -107,7 +137,11 @@ export default function AdminPage() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await fetch("/api/admin/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    setIsAuthed(false);
     setRows([]);
   };
 
@@ -160,39 +194,49 @@ export default function AdminPage() {
               <CardTitle>Randevu Listesi</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-2 pr-4">Ad</th>
-                      <th className="py-2 pr-4">Soyad</th>
-                      <th className="py-2 pr-4">Hizmet</th>
-                      <th className="py-2 pr-4">Tarih</th>
-                      <th className="py-2 pr-4">Saat</th>
-                      <th className="py-2 pr-4">Oluşturma</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.length === 0 && !loading ? (
-                      <tr>
-                        <td className="py-4 text-muted-foreground" colSpan={6}>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ad</TableHead>
+                      <TableHead>Soyad</TableHead>
+                      <TableHead>E-posta</TableHead>
+                      <TableHead>Hizmet</TableHead>
+                      <TableHead>Ekstra Seçenekler</TableHead>
+                      <TableHead>Tarih</TableHead>
+                      <TableHead>Saat</TableHead>
+                      <TableHead>Oluşturma</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-muted-foreground">
+                          Yükleniyor...
+                        </TableCell>
+                      </TableRow>
+                    ) : rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-muted-foreground">
                           Kayıt yok.
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ) : (
                       rows.map((row) => (
-                        <tr key={row.id} className="border-b last:border-b-0">
-                          <td className="py-2 pr-4">{row.first_name}</td>
-                          <td className="py-2 pr-4">{row.last_name}</td>
-                          <td className="py-2 pr-4">{row.service_type}</td>
-                          <td className="py-2 pr-4">{row.appointment_date}</td>
-                          <td className="py-2 pr-4">{row.appointment_time}</td>
-                          <td className="py-2 pr-4">{new Date(row.created_at).toLocaleString("tr-TR")}</td>
-                        </tr>
+                        <TableRow key={row.id}>
+                          <TableCell>{row.first_name}</TableCell>
+                          <TableCell>{row.last_name}</TableCell>
+                          <TableCell>{row.email || "-"}</TableCell>
+                          <TableCell>{formatServiceType(row.service_type)}</TableCell>
+                          <TableCell>{row.addons?.length ? row.addons.join(", ") : "-"}</TableCell>
+                          <TableCell>{formatAppointmentDate(row.appointment_date)}</TableCell>
+                          <TableCell>{row.appointment_time}</TableCell>
+                          <TableCell>{new Date(row.created_at).toLocaleString("tr-TR")}</TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>

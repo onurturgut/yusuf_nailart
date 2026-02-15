@@ -1,11 +1,11 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Popover,
   PopoverContent,
@@ -19,11 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, ChevronDown, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { tr, enUS } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const AppointmentSection = () => {
@@ -31,11 +30,12 @@ const AppointmentSection = () => {
   const { toast } = useToast();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
   const [service, setService] = useState("");
   const [addons, setAddons] = useState<string[]>([]);
+  const [isAddonsOpen, setIsAddonsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const timeSlots = [
@@ -45,30 +45,33 @@ const AppointmentSection = () => {
   ];
 
   const services = [
+    { value: "prosthetic", label: language === "tr" ? "Protez Tırnak ve Bakımı" : "Prosthetic Nails and Care" },
     { value: "gel", label: language === "tr" ? "Jel Tırnak" : "Gel Nails" },
-    { value: "prosthetic", label: language === "tr" ? "Protez Tırnak" : "Prosthetic Nails" },
-    { value: "manicure-pedicure", label: language === "tr" ? "Manikür & Pedikür" : "Manicure & Pedicure" },
-    { value: "nail-art", label: language === "tr" ? "Tırnak Sanatı" : "Nail Art" },
+    { value: "manicure-pedicure", label: language === "tr" ? "Manikür ve Pedikür" : "Manicure and Pedicure" },
+    { value: "nail-art", label: language === "tr" ? "Kalıcı Oje" : "Permanent Gel Polish" },
   ];
+
   const addonOptions = [
-    { value: "french", label: language === "tr" ? "Frenc" : "French" },
-    { value: "cat-eye", label: language === "tr" ? "Kedi gözü" : "Cat eye" },
-    { value: "chrome-dust", label: language === "tr" ? "Chrome tuzu" : "Chrome dust" },
-    { value: "pearl-dust", label: language === "tr" ? "İnci tozu" : "Pearl dust" },
-    { value: "nail-art-addon", label: language === "tr" ? "Nail art" : "Nail art" },
+    { value: "french", label: language === "tr" ? "French" : "French" },
+    { value: "cat-eye", label: language === "tr" ? "Kedi Gözü" : "Cat Eye" },
+    { value: "chrome-powder", label: language === "tr" ? "Chrome Tozu" : "Chrome Powder" },
+    { value: "pearl-powder", label: language === "tr" ? "İnci Tozu" : "Pearl Powder" },
+    { value: "nail-art-addon", label: language === "tr" ? "Nail Art" : "Nail Art" },
   ];
+
+  const toggleAddon = (value: string, checked: boolean) => {
+    setAddons((prev) => {
+      if (checked) {
+        return prev.includes(value) ? prev : [...prev, value];
+      }
+      return prev.filter((item) => item !== value);
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !firstName.trim() ||
-      !lastName.trim() ||
-      !phone.trim() ||
-      !date ||
-      !time ||
-      !service
-    ) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !date || !time || !service) {
       toast({
         title: t("appointment.error"),
         variant: "destructive",
@@ -79,24 +82,29 @@ const AppointmentSection = () => {
     setIsSubmitting(true);
 
     try {
-      const selectedAddonLabels = addons
-        .map((value) => addonOptions.find((addon) => addon.value === value)?.label)
-        .filter(Boolean)
-        .join(", ");
-      const selectedServiceLabel = services.find((s) => s.value === service)?.label ?? service;
-      const serviceWithAddons = selectedAddonLabels
-        ? `${selectedServiceLabel} + ${selectedAddonLabels}`
-        : selectedServiceLabel;
+      const selectedAddonLabels = addonOptions
+        .filter((option) => addons.includes(option.value))
+        .map((option) => option.label);
 
-      const { error } = await supabase.from("appointments").insert({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        appointment_date: format(date, "yyyy-MM-dd"),
-        appointment_time: time,
-        service_type: serviceWithAddons,
+      const response = await fetch("/api/appointments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          email: email.trim(),
+          appointment_date: format(date, "yyyy-MM-dd"),
+          appointment_time: time,
+          service_type: service,
+          addons: selectedAddonLabels,
+        }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error("Appointment request failed");
+      }
 
       toast({
         title: t("appointment.success"),
@@ -106,11 +114,12 @@ const AppointmentSection = () => {
       // Reset form
       setFirstName("");
       setLastName("");
-      setPhone("");
+      setEmail("");
       setDate(undefined);
       setTime("");
       setService("");
       setAddons([]);
+      setIsAddonsOpen(false);
     } catch (error) {
       console.error("Appointment error:", error);
       toast({
@@ -123,10 +132,10 @@ const AppointmentSection = () => {
   };
 
   return (
-    <section id="appointment" className="py-20 relative overflow-hidden">
+    <section id="appointment" className="py-20 relative overflow-hidden lg:h-full">
       <div className="absolute inset-0 bg-gradient-to-br from-nail-lavender/20 via-background to-nail-pink/20" />
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative z-10 lg:flex lg:h-full lg:flex-col">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
             {t("appointment.title")}
@@ -136,13 +145,13 @@ const AppointmentSection = () => {
           </p>
         </div>
 
-        <Card className="max-w-xl mx-auto border-none shadow-xl bg-card/80 backdrop-blur">
+        <Card className="mx-auto h-full w-full max-w-xl border-none bg-card/80 shadow-xl backdrop-blur lg:flex lg:flex-1 lg:flex-col">
           <CardHeader>
             <CardTitle className="text-center font-serif text-2xl text-primary">
               {t("appointment.title")}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="lg:flex-1">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -170,15 +179,15 @@ const AppointmentSection = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">{t("appointment.phone")}</Label>
+                <Label htmlFor="email">{t("appointment.email")}</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder={t("appointment.phone")}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("appointment.email")}
                   required
-                  maxLength={30}
+                  maxLength={120}
                 />
               </div>
 
@@ -248,46 +257,52 @@ const AppointmentSection = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Label>{t("appointment.addons")}</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      {t("appointment.addons")}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <ScrollArea className="h-48">
-                      <div className="p-3 space-y-2">
-                        {addonOptions.map((addon) => {
-                          const checked = addons.includes(addon.value);
-                          return (
-                            <label
-                              key={addon.value}
-                              className="flex items-center gap-3 rounded-md border border-border bg-background/60 px-3 py-2"
-                            >
-                              <Checkbox
-                                checked={checked}
-                                onCheckedChange={(value) => {
-                                  const next = value
-                                    ? [...addons, addon.value]
-                                    : addons.filter((item) => item !== addon.value);
-                                  setAddons(next);
-                                }}
-                              />
-                              <span className="text-sm text-foreground">{addon.label}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <Collapsible
+                open={isAddonsOpen}
+                onOpenChange={setIsAddonsOpen}
+                className="space-y-3"
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between text-left font-normal"
+                  >
+                    <span>{t("appointment.addons")}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        isAddonsOpen && "rotate-180",
+                      )}
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent className="space-y-2 rounded-lg border border-border/70 bg-muted/20 p-3">
+                  {addonOptions.map((option) => {
+                    const isChecked = addons.includes(option.value);
+                    const checkboxId = `addon-${option.value}`;
+
+                    return (
+                      <label
+                        key={option.value}
+                        htmlFor={checkboxId}
+                        className="flex cursor-pointer items-center justify-between rounded-md px-1 py-1.5 hover:bg-muted/40"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id={checkboxId}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => toggleAddon(option.value, checked === true)}
+                          />
+                          <span className="text-sm text-foreground">{option.label}</span>
+                        </div>
+                        <span className="text-sm font-semibold text-emerald-600">+100 TL</span>
+                      </label>
+                    );
+                  })}
+                </CollapsibleContent>
+              </Collapsible>
 
               <Button
                 type="submit"
@@ -305,6 +320,3 @@ const AppointmentSection = () => {
 };
 
 export default AppointmentSection;
-
-
-
