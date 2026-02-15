@@ -1,5 +1,11 @@
 ﻿export const translations = {
   tr: {
+    common: {
+      bookingIntroFirst:
+        "Yusuf Nail Art olarak, güzelliği detaylarda saklı bir sanat olarak görüyoruz. Her tasarımımızda estetik, hijyen ve kişisel tarzı ön planda tutarak müşterilerimize özgün ve kaliteli nail art hizmeti sunuyoruz.",
+      bookingIntroSecond:
+        "Modern trendleri yakından takip ediyor, her müşterimizin stiline özel tasarımlar oluşturuyoruz. Amacımız yalnızca güzel tırnaklar değil; kendinizi özel ve özgüvenli hissetmenizi sağlayan bir deneyim sunmaktır.",
+    },
     nav: {
       home: "Ana Sayfa",
       services: "Hizmetler",
@@ -17,19 +23,19 @@
       subtitle: "Profesyonel ve hijyenik ortamda sunulan hizmetlerimiz",
       gelNails: {
         title: "Jel Tırnak",
-        description: "Uzun ömürlü, parlak ve dayanıklı jel tırnak uygulaması. Doğal görünümlü, kırılmaya karşı dirençli tırnaklar için ideal seçim.",
+        description: "Uzun ömürlü, parlak ve dayanıklı jel tırnak uygulaması.",
       },
       prostheticNails: {
-        title: "Protez Tırnak",
-        description: "Kırık veya hasarlı tırnaklarınız için profesyonel protez tırnak uygulaması. Doğal görünüm ve uzun ömürlü sonuçlar.",
+        title: "Protez Tırnak ve Bakımı",
+        description: "Kırık veya hasarlı tırnaklar için profesyonel protez tırnak uygulaması ve bakım hizmeti.",
       },
       manicurePedicure: {
-        title: "Manikür & Pedikür",
-        description: "El ve ayak tırnaklarınız için kapsamlı bakım hizmeti. Temizlik, şekillendirme ve cilt bakımı bir arada.",
+        title: "Manikür ve Pedikür",
+        description: "El ve ayak tırnaklarınız için kapsamlı bakım hizmeti.",
       },
       nailArt: {
-        title: "Tırnak Sanatı",
-        description: "Özel tasarımlar, desenler ve dekoratif uygulamalar ile tırnaklarınızı sanat eserine dönüştürün.",
+        title: "Kalıcı Oje",
+        description: "Uzun süre dayanıklı ve parlak görünüm sağlayan kalıcı oje uygulaması.",
       },
     },
     appointment: {
@@ -37,6 +43,7 @@
       subtitle: "Size uygun tarih ve saati seçin",
       firstName: "Adınız",
       lastName: "Soyadınız",
+      email: "E-posta Adresiniz",
       phone: "Telefon Numaranız",
       addons: "Ekstra Seçenekler",
       date: "Tarih",
@@ -59,6 +66,12 @@
     },
   },
   en: {
+    common: {
+      bookingIntroFirst:
+        "At Yusuf Nail Art, we see beauty as an art hidden in the details. In every design, we prioritize aesthetics, hygiene, and personal style to offer unique and high-quality nail art services.",
+      bookingIntroSecond:
+        "We closely follow modern trends and create designs tailored to each client's style. Our goal is not only beautiful nails, but also an experience that makes you feel special and confident.",
+    },
     nav: {
       home: "Home",
       services: "Services",
@@ -76,19 +89,19 @@
       subtitle: "Our services offered in a professional and hygienic environment",
       gelNails: {
         title: "Gel Nails",
-        description: "Long-lasting, shiny and durable gel nail application. The ideal choice for natural-looking, break-resistant nails.",
+        description: "Long-lasting, shiny and durable gel nail application.",
       },
       prostheticNails: {
-        title: "Prosthetic Nails",
-        description: "Professional prosthetic nail application for broken or damaged nails. Natural appearance and long-lasting results.",
+        title: "Prosthetic Nails and Care",
+        description: "Professional prosthetic nail application and care service for broken or damaged nails.",
       },
       manicurePedicure: {
-        title: "Manicure & Pedicure",
-        description: "Comprehensive care service for your hands and feet. Cleaning, shaping and skin care all in one.",
+        title: "Manicure and Pedicure",
+        description: "Comprehensive care service for your hands and feet.",
       },
       nailArt: {
-        title: "Nail Art",
-        description: "Transform your nails into works of art with custom designs, patterns and decorative applications.",
+        title: "Permanent Gel Polish",
+        description: "Long-lasting and glossy permanent gel polish application.",
       },
     },
     appointment: {
@@ -96,6 +109,7 @@
       subtitle: "Choose a date and time that suits you",
       firstName: "First Name",
       lastName: "Last Name",
+      email: "Email Address",
       phone: "Phone Number",
       addons: "Add-ons",
       date: "Date",

@@ -10,8 +10,10 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <Navigation />
       <HeroSection />
-      <ServicesSection />
-      <AppointmentSection />
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-stretch">
+        <ServicesSection />
+        <AppointmentSection />
+      </div>
       <Footer />
       <WhatsAppButton />
     </div>
