@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# Yusuf Nail Art
 
-## Project info
+`Yusuf Nail Art`, Next.js tabanli bir tirnak bakim ve randevu yonetim projesidir. Uygulama; hizmet tanitimi, online randevu formu, e-posta bildirimi ve admin paneli akisini tek repo icinde toplar.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Ozellikler
 
-## How can I edit this code?
+- Ana sayfada hizmetler, tanitim alani ve iletisim odakli kurgu
+- Randevu olusturma formu
+- MongoDB uzerinden randevu kaydi
+- Musteriye ve admine e-posta bildirimi
+- `/admin` uzerinden randevu listeleme ve yonetim girisi
+- Turkce ve Ingilizce dil destegi
 
-There are several ways of editing your application.
+## Teknolojiler
 
-**Use Lovable**
+- Next.js 14
+- React 18
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- MongoDB
+- Nodemailer / Brevo
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Proje Yapisi
 
-Changes made via Lovable will be committed automatically to this repo.
+- `src/pages/index.tsx`: Ana sayfa
+- `src/components/*`: Arayuz bilesenleri
+- `src/pages/api/appointments.ts`: Randevu olusturma API'si
+- `src/pages/admin.tsx`: Admin paneli
+- `src/pages/api/admin/*`: Admin giris ve randevu API'leri
+- `src/lib/mongodb.ts`: MongoDB baglantisi
+- `src/lib/server/mailer.ts`: E-posta gonderim mantigi
 
-**Use your preferred IDE**
+## Kurulum
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+npm install
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Ardindan `.env` dosyanizi olusturup gerekli ortam degiskenlerini tanimlayin:
 
-Follow these steps:
+```env
+MONGODB_URI=
+MONGODB_DB=yusuf_nailart
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+ADMIN_EMAIL=
+ADMIN_EMAILS=
+ADMIN_PASSWORD=
+ADMIN_SESSION_SECRET=
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+EMAIL_PROVIDER=smtp
 
-# Step 3: Install the necessary dependencies.
-npm i
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+BREVO_API_KEY=
+BREVO_FROM_EMAIL=
+BREVO_FROM_NAME=Yusuf Nail Art
+```
+
+Notlar:
+
+- `ADMIN_EMAIL` veya `ADMIN_EMAILS` alanlarindan en az biri tanimli olmalidir.
+- `EMAIL_PROVIDER=brevo` kullanilacaksa `BREVO_*` alanlari doldurulmalidir.
+- `EMAIL_PROVIDER` bos birakilirsa varsayilan olarak SMTP kullanilir.
+
+## Gelistirme
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Uygulama varsayilan olarak `http://localhost:3000` adresinde calisir.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Komutlar
 
-**Use GitHub Codespaces**
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Admin Erisimi
 
-## What technologies are used for this project?
+- Admin paneli: `http://localhost:3000/admin`
+- Giris icin `.env` icindeki `ADMIN_EMAIL` veya `ADMIN_EMAILS` ve `ADMIN_PASSWORD` kullanilir.
 
-This project is built with:
+## Dagitim
 
-- Next.js
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Uretim ortamina cikmadan once asagidaki alanlarin dogru tanimli oldugundan emin olun:
 
-## How can I deploy this project?
+- MongoDB baglanti bilgileri
+- Admin oturum bilgileri
+- SMTP veya Brevo e-posta ayarlari
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Ardindan standart Next.js dagitim akisiyla yayinlayabilirsiniz:
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+npm run build
+npm run start
+```
